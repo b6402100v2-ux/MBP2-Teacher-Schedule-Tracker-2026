@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy of Magic 🌸 Pastel Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mali:wght@400;600;700&family=Prompt:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #fffaf0; 
+            background-image: radial-gradient(circle at 10% 20%, rgba(255, 181, 232, 0.2) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(162, 210, 255, 0.2) 0%, transparent 40%);
+            background-attachment: fixed;
+            color: #475569; overflow-x: hidden;
+        }
+        .font-cute { font-family: 'Mali', cursive; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 40px -10px rgba(255, 181, 232, 0.4);
+            border-radius: 2rem;
+        }
+        
+        .pastel-text {
+            background: linear-gradient(135deg, #ff9ce0 0%, #a2d2ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .btn-magic {
+            background: linear-gradient(135deg, #ffb5e8 0%, #c8b6ff 100%);
+            color: white; border: none; transition: all 0.3s ease;
+        }
+        .btn-magic:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ff9ce0 0%, #b89cff 100%);
+            transform: translateY(-3px); box-shadow: 0 8px 20px rgba(200, 182, 255, 0.4);
+        }
+        .btn-magic:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .tab-btn { color: #64748b; transition: all 0.3s; }
+        .tab-btn.active {
+            background: rgba(255, 181, 232, 0.15); color: #db7093; font-weight: bold;
+            border-bottom: 3px solid #ffb5e8;
+        }
+
+        input, select {
+            background: #ffffff; border: 2px solid #fde2e4;
+            color: #4a4a4a; border-radius: 1rem; transition: all 0.3s ease;
+        }
+        input:focus, select:focus { outline: none; border-color: #a2d2ff; box-shadow: 0 0 0 4px rgba(162, 210, 255, 0.2); }
+
+        /* Loading Overlay */
+        #global-loader {
+            position: fixed; inset: 0; background: #fffaf0; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 60px; height: 60px;
+            border: 5px solid #fde2e4; border-top-color: #ffb5e8;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Chatbot */
+        #star-chatbot { position: fixed; bottom: 20px; right: 20px; z-index: 40; }
+        .chat-window {
+            height: 0; opacity: 0; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom right; transform: scale(0.8);
+        }
+        .chat-window.active { height: 420px; opacity: 1; transform: scale(1); }
+        .msg-ai { background: #ffb5e8; color: white; border-radius: 16px 16px 16px 0; }
+        .msg-user { background: #white; border: 1px solid #fde2e4; color: #475569; border-radius: 16px 16px 0 16px; align-self: flex-end; }
+    </style>
+</head>
+<body>
+
+    <div id="global-loader">
+        <div class="spinner mb-4"></div>
+        <h2 class="font-cute text-2xl text-pink-500 font-bold animate-pulse">กำลังซิงก์ข้อมูลเวทมนตร์จากก้อนเมฆ... ☁️</h2>
+    </div>
+
+    <nav class="glass-panel sticky top-4 z-30 mx-4 md:mx-8 px-6 py-4 flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-pink-300 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-star"></i></div>
+            <h1 class="text-2xl font-cute font-bold pastel-text">Academy of Magic</h1>
+        </div>
+        <div class="flex flex-wrap justify-center gap-2 font-cute">
+            <button onclick="switchTab('record')" id="tab-record" class="tab-btn px-4 py-2 rounded-xl active"><i class="fa-solid fa-pen-to-square mr-1 text-pink-400"></i> บันทึกรายวัน</button>
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 rounded-xl"><i class="fa-solid fa-chart-pie mr-1 text-blue-400"></i> หอคอยสถิติ</button>
+            <button onclick="switchTab('setup')" id="tab-setup" class="tab-btn px-4 py-2 rounded-xl"><i class="fa-solid fa-calendar-plus mr-1 text-purple-400"></i> จัดตารางสอน</button>
+            <button onclick="switchTab('history')" id="tab-history" class="tab-btn px-4 py-2 rounded-xl"><i class="fa-solid fa-box-archive mr-1 text-green-400"></i> ฐานข้อมูล</button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 md:px-8 pb-20 text-slate-700">
+        
+        <section id="panel-record" class="max-w-5xl mx-auto block animate-fade-in">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-cute font-bold text-pink-500 mb-2">📝 บันทึกการสอนรายวัน</h2>
+                <p class="text-slate-500">เลือกวันที่และห้องเรียน เพื่อเช็คชื่อและแจก Mana ให้นักเวทย์ 🌸</p>
+            </div>
+
+            <div class="glass-panel p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-white/60 p-6 rounded-[1.5rem] border-2 border-white shadow-sm">
+                    <div>
+                        <label class="block text-pink-600 font-bold mb-2"><i class="fa-solid fa-calendar-heart mr-1"></i> วันที่สอน</label>
+                        <input type="date" id="recordDate" class="w-full p-3 shadow-sm" onchange="generateDailyRecord()">
+                    </div>
+                    <div>
+                        <label class="block text-blue-500 font-bold mb-2"><i class="fa-solid fa-users mr-1"></i> ระดับชั้น/ห้องเรียน</label>
+                        <select id="recordGrade" class="w-full p-3 shadow-sm" onchange="generateDailyRecord()">
+                            <option value="">-- เลือกระดับชั้น --</option>
+                            <option value="ม.1/1">ม.1/1</option><option value="ม.1/2">ม.1/2</option>
+                            <option value="ม.2/1">ม.2/1</option><option value="ม.2/2">ม.2/2</option>
+                            <option value="ม.3/1">ม.3/1</option><option value="ม.3/2">ม.3/2</option>
+                            <option value="ม.4/1">ม.4/1</option><option value="ม.4/2">ม.4/2</option><option value="ม.4/3">ม.4/3</option>
+                            <option value="ม.5/1">ม.5/1</option><option value="ม.5/2">ม.5/2</option>
+                            <option value="ม.6/1">ม.6/1</option><option value="ม.6/2">ม.6/2</option><option value="ม.6/3">ม.6/3</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="record-header" class="hidden mb-6 pb-4 border-b-2 border-pink-100 flex justify-between items-end">
+                    <h3 class="font-cute text-2xl text-gray-700 font-bold"><i class="fa-solid fa-list-ul text-pink-400 mr-2"></i> ตารางเรียน</h3>
+                    <span class="text-sm text-pink-600 font-bold bg-pink-100 px-4 py-1.5 rounded-full" id="record-subtitle"></span>
+                </div>
+
+                <div id="record-table-container" class="space-y-4">
+                    <div class="text-center py-10 text-slate-400 font-medium">
+                        <i class="fa-solid fa-paw text-5xl mb-3 text-pink-200"></i><br>
+                        โปรดเลือกวันที่และระดับชั้น เพื่อดึงตารางเรียนนะคะ 🌸
+                    </div>
+                </div>
+
+                <div id="submit-record-btn" class="mt-8 hidden flex justify-center md:justify-end">
+                    <button onclick="submitDailyRecord()" id="submitBtn" class="btn-magic px-8 py-3 rounded-2xl font-cute font-bold text-xl flex items-center shadow-md">
+                        <i class="fa-solid fa-check-double mr-2"></i> บันทึกข้อมูลและแจก Mana ✨
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-dashboard" class="hidden animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div class="lg:col-span-1 space-y-3">
+                    <div class="glass-panel p-5 text-center">
+                        <h3 class="font-cute font-bold text-xl text-purple-500 mb-4 border-b-2 border-purple-50 pb-2">📚 เลือกหมวดวิชา</h3>
+                        <div id="guild-selector" class="space-y-2"></div>
+                    </div>
+                </div>
+                <div class="lg:col-span-3">
+                    <div class="glass-panel p-6 md:p-8 min-h-[400px]">
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b-2 border-pink-50 pb-4">
+                            <h3 class="font-cute text-2xl font-bold text-pink-500 mb-2 sm:mb-0" id="current-guild-name">โปรดเลือกกิลด์</h3>
+                            <span class="bg-purple-100 text-purple-600 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm" id="guild-total-mana">รวม: 0 Mana</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="guild-members-container"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="panel-setup" class="hidden max-w-5xl mx-auto animate-fade-in">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-cute font-bold text-blue-500 mb-2">⚙️ สร้างตารางเรียนต้นแบบ</h2>
+                <p class="text-slate-500">กรอกตารางเรียน 7 คาบ (ระบบจะบันทึกและซิงก์ขึ้นคลาวด์ให้อัตโนมัติเลยจ้า)</p>
+            </div>
+            
+            <div class="glass-panel p-6 md:p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 bg-white/60 rounded-[1.5rem] border-2 border-white shadow-sm">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-600 mb-2">🎒 เลือกระดับชั้น</label>
+                        <select id="setupGrade" class="w-full p-3 font-bold text-purple-600 shadow-sm" onchange="renderSetupTable()">
+                            <option value="">-- เลือกห้องเรียนที่ต้องการจัดตาราง --</option>
+                            <option value="ม.1/1">ม.1/1</option><option value="ม.1/2">ม.1/2</option>
+                            <option value="ม.2/1">ม.2/1</option><option value="ม.2/2">ม.2/2</option>
+                            <option value="ม.3/1">ม.3/1</option><option value="ม.3/2">ม.3/2</option>
+                            <option value="ม.4/1">ม.4/1</option><option value="ม.4/2">ม.4/2</option><option value="ม.4/3">ม.4/3</option>
+                            <option value="ม.5/1">ม.5/1</option><option value="ม.5/2">ม.5/2</option>
+                            <option value="ม.6/1">ม.6/1</option><option value="ม.6/2">ม.6/2</option><option value="ม.6/3">ม.6/3</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-600 mb-2">🗓️ เลือกวัน</label>
+                        <select id="setupDay" class="w-full p-3 font-bold text-pink-500 shadow-sm" onchange="renderSetupTable()">
+                            <option value="1">วันจันทร์ 💛</option><option value="2">วันอังคาร 💖</option>
+                            <option value="3">วันพุธ 💚</option><option value="4">วันพฤหัสบดี 🧡</option><option value="5">วันศุกร์ 💙</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="setup-table-container" class="space-y-4">
+                    <div class="text-center py-8 text-slate-400 font-medium">โปรดเลือกระดับชั้นเพื่อเริ่มจัดตารางสอนนะคะ 🪄</div>
+                </div>
+                <div class="mt-4 text-center h-6"><span id="setup-save-indicator" class="text-green-500 font-cute font-bold opacity-0 transition-opacity bg-white px-4 py-1.5 rounded-full shadow-sm"><i class="fa-solid fa-check-circle"></i> ซิงก์ขึ้น Cloud เรียบร้อย!</span></div>
+            </div>
+        </section>
+
+        <section id="panel-history" class="hidden max-w-6xl mx-auto animate-fade-in">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-cute font-bold text-purple-500 mb-2">🗂️ ประวัติการบันทึกเวทมนตร์</h2>
+                <p class="text-slate-500">ดูข้อมูลย้อนหลังที่แอดมินทุกคนเคยบันทึกไว้ในระบบ Cloud</p>
+            </div>
+            <div class="glass-panel p-6 md:p-8 overflow-hidden">
+                <div class="max-w-md mx-auto mb-8 bg-white/60 p-4 rounded-2xl border-2 border-white shadow-sm">
+                    <label class="block text-sm font-bold text-gray-600 mb-2 text-center">เลือกวันที่ต้องการดูประวัติ 📅</label>
+                    <input type="date" id="historyDate" class="w-full rounded-xl px-4 py-3 text-center shadow-sm" onchange="renderHistory()">
+                </div>
+                <div id="history-container" class="space-y-6">
+                    <div class="text-center text-gray-400 font-medium py-10"><i class="fa-solid fa-magnifying-glass text-4xl mb-3 text-pink-200"></i><br>เลือกวันที่เพื่อค้นหาประวัติได้เลยค่ะ</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="modal-avatar" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="glass-panel w-full max-w-4xl flex flex-col overflow-hidden bg-white/90">
+            <div class="p-6 bg-pink-50 flex justify-between items-center border-b-2 border-pink-100">
+                <h3 class="text-2xl font-cute font-bold text-pink-500">🌸 เลือกอวตารคุณครู</h3>
+                <button onclick="closeModal('modal-avatar')" class="text-slate-400 hover:text-pink-500 text-2xl bg-white w-10 h-10 rounded-full shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-4" id="avatar-grid"></div>
+            </div>
+            <input type="hidden" id="editing-teacher">
+        </div>
+    </div>
+
+    <div id="modal-chart" class="fixed inset-0 bg-slate-900/40 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-md flex flex-col overflow-hidden bg-white/90">
+            <div class="p-5 bg-purple-50 flex justify-between items-center border-b-2 border-purple-100">
+                <h3 class="text-xl font-cute font-bold text-purple-600">📊 สถิติรายบุคคล</h3>
+                <button onclick="closeModal('modal-chart')" class="text-slate-400 hover:text-purple-500 text-xl bg-white w-8 h-8 rounded-full shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 flex flex-col items-center">
+                <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-md border-4 border-pink-100 mb-3 overflow-hidden">
+                    <img id="chart-avatar" src="" class="w-full h-full object-cover">
+                </div>
+                <h4 class="text-xl font-bold text-slate-700" id="chart-name">ชื่อ</h4>
+                <div class="text-sm font-bold text-pink-500 mb-6 bg-pink-50 px-4 py-1 rounded-full" id="chart-level">Level 0 | 0 Mana</div>
+                <div class="relative w-full aspect-square max-w-[250px]"><canvas id="pieChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="star-chatbot">
+        <div id="chat-window" class="chat-window glass-panel w-80 mb-4 flex flex-col border-2 border-white shadow-2xl">
+            <div class="bg-gradient-to-r from-pink-200 to-pink-100 p-4 flex justify-between items-center rounded-t-3xl border-b border-pink-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white rounded-full border-2 border-pink-200 flex items-center justify-center text-2xl shadow-sm">🐰</div>
+                    <div><h3 class="font-cute font-bold text-pink-600 text-lg leading-tight">น้องต่าย</h3><p class="text-[10px] text-pink-400 font-bold">ผู้ช่วย Cloud Sync</p></div>
+                </div>
+                <button onclick="toggleChat()" class="text-gray-400 hover:text-pink-500 bg-white w-8 h-8 rounded-full shadow-sm"><i class="fa-solid fa-chevron-down"></i></button>
+            </div>
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 flex flex-col bg-white/60 text-sm">
+                <div class="msg-ai p-4 shadow-sm self-start max-w-[85%] leading-relaxed font-medium">
+                    สวัสดีค่า! 🐰 ระบบอัปเกรดเป็น Cloud Sync สมบูรณ์ 100% แล้วนะคะ! ตอนนี้แอดมินทุกคนจะเห็นตารางสอนและสถิติตรงกันหมดเลยค่ะ 🌸✨
+                </div>
+            </div>
+            <div class="p-3 bg-white border-t border-pink-50 flex gap-2 rounded-b-3xl">
+                <input type="text" id="chat-input" placeholder="คุยกับน้องต่าย..." class="flex-1 bg-pink-50 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-pink-200" onkeypress="if(event.key === 'Enter') sendMsg()">
+                <button onclick="sendMsg()" class="bg-pink-400 hover:bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center transition shadow-sm">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+        <button onclick="toggleChat()" class="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center text-3xl hover:scale-110 transition transform relative border-4 border-pink-100">
+            🐰<span class="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></span>
+        </button>
+    </div>
+
+    <script>
+        // ⚠️ ใส่ URL ของ Google Apps Script ที่ได้จากการ Deploy ที่นี่เลยค่ะ ⚠️
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwYvBJiZB14_qki_pFTrYR7z00fMwltVfUGobWIaZNs77MElsuO1zYG9PaijVAh8Lsk/exec";
+
+        // 1. Data Definitions
+        const guilds = ["กิลด์คณิตศาสตร์", "กิลด์วิทยาศาสตร์และเทคโนโลยี", "กิลด์ภาษาไทย", "กิลด์ภาษาต่างประเทศ", "กิลด์สังคมศึกษาฯ", "กิลด์ศิลปะและดนตรี", "กิลด์การงานอาชีพ", "กิลด์สุขศึกษาและพลศึกษา"];
+        
+        // 12 Cute Human Avatars
+        const humanAvatars = [
+            { name: "ครูใจดี", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Mia&backgroundColor=ffb5e8" },
+            { name: "ครูใจเย็น", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Felix&backgroundColor=a2d2ff" },
+            { name: "ครูสายชิล", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Jasper&backgroundColor=b5ead7" },
+            { name: "ครูพลังล้น", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Lily&backgroundColor=ffdac1" },
+            { name: "ครูสายหวาน", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Chloe&backgroundColor=c8b6ff" },
+            { name: "ครูอารมณ์ดี", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Oliver&backgroundColor=fffae3" },
+            { name: "ครูสุดเนี๊ยบ", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Zoe&backgroundColor=ff9ce0" },
+            { name: "ครูอินดี้", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Sam&backgroundColor=b89cff" },
+            { name: "ครูสายซัพพอร์ต", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Abby&backgroundColor=a7f3d0" },
+            { name: "ครูนักประดิษฐ์", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Jack&backgroundColor=fca5a5" },
+            { name: "ครูนักกิจกรรม", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Max&backgroundColor=fde047" },
+            { name: "ครูนักปราชญ์", url: "https://api.dicebear.com/7.x/lorelei/svg?seed=Ruby&backgroundColor=93c5fd" }
+        ];
+
+        const teacherList = [
+            {n:"นางนงลักษณ์ สุขสวัสดิ์", g:"กิลด์คณิตศาสตร์"},{n:"นายธนพล โพธิ์งาม", g:"กิลด์คณิตศาสตร์"},{n:"นายวัชร กล่อมเสียง", g:"กิลด์คณิตศาสตร์"},
+            {n:"นางนาฏชนก สิงห์วี", g:"กิลด์วิทยาศาสตร์และเทคโนโลยี"},{n:"นายมนตรี สิงห์วี", g:"กิลด์วิทยาศาสตร์และเทคโนโลยี"},{n:"นางสาวหม้านฟ้า วงศ์ทองใบใหญ่", g:"กิลด์วิทยาศาสตร์และเทคโนโลยี"},{n:"นายครรชิต กอเฮง", g:"กิลด์วิทยาศาสตร์และเทคโนโลยี"},{n:"นายรัชพล บุตรเล็ก", g:"กิลด์วิทยาศาสตร์และเทคโนโลยี"},
+            {n:"นางสาวปรียาภรณ์ การะเวก", g:"กิลด์ภาษาไทย"},{n:"นางสาวศิริวิภา น้อยรุ่ง", g:"กิลด์ภาษาไทย"},{n:"นายสหรัฐ ศรีดาฟอง", g:"กิลด์ภาษาไทย"},{n:"นางสาวพัชรี ทองครุฑ", g:"กิลด์ภาษาไทย"},
+            {n:"นางสาวพชรพรรณ ประสารศรี", g:"กิลด์ภาษาต่างประเทศ"},{n:"นางสาวณัฐมน ศรีราพัฒท์", g:"กิลด์ภาษาต่างประเทศ"},{n:"นางสาวจิดารัตน์ หลักแหลม", g:"กิลด์ภาษาต่างประเทศ"},
+            {n:"นายวชิระ จันทร์อ่อน", g:"กิลด์สังคมศึกษาฯ"},{n:"นางศรีไพร พันโนราช", g:"กิลด์สังคมศึกษาฯ"},{n:"นางสาวกนกกร เกตุทับ", g:"กิลด์สังคมศึกษาฯ"},
+            {n:"นางวรวีร์ มรกฎ", g:"กิลด์ศิลปะและดนตรี"},{n:"นายจิรายุฐกานต์ บุญคำ", g:"กิลด์ศิลปะและดนตรี"},{n:"นายณัฐวัฒน์ อินเอี่ยม", g:"กิลด์ศิลปะและดนตรี"},
+            {n:"นางสาวม่านทอง อาชีวะ", g:"กิลด์การงานอาชีพ"},{n:"นายณัฐวุฒิ แก้วมณี", g:"กิลด์การงานอาชีพ"},
+            {n:"นายนันทกร ใหม่รุ่งโรจน์", g:"กิลด์สุขศึกษาและพลศึกษา"},{n:"นายศักดิ์สิทธิ์ สระเกษี", g:"กิลด์สุขศึกษาและพลศึกษา"}
+        ];
+
+        let appData = {};
+        let currentChart = null;
+        let setupSaveTimeout = null;
+
+        // 2. Initialization & Cloud Fetch
+        window.onload = () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('recordDate').value = today;
+            document.getElementById('historyDate').value = today;
+            
+            // ดึงข้อมูลจาก Cloud ตอนเปิดเว็บ
+            fetchCloudData();
+        };
+
+        async function fetchCloudData() {
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'load' })
+                });
+                const data = await res.json();
+                
+                if (Object.keys(data).length === 0) {
+                    // ถ้ายังไม่มีข้อมูลใน Cloud ให้สร้าง Default
+                    initDefaultData();
+                } else {
+                    appData = data;
+                }
+            } catch (err) {
+                console.error("Cloud Fetch Error:", err);
+                // Fallback to local if offline
+                let local = localStorage.getItem('academyPastelDB');
+                if (local) appData = JSON.parse(local);
+                else initDefaultData();
+            } finally {
+                // ปิดหน้าจอโหลดดิ้ง
+                document.getElementById('global-loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('global-loader').style.display = 'none', 500);
+                
+                renderGuilds(); 
+                renderHistory(); 
+                switchTab('record');
+                renderAvatarOptions();
+            }
+        }
+
+        function initDefaultData() {
+            appData = { teachers: {}, masterSchedule: {}, history: [] };
+            teacherList.forEach((t, i) => {
+                appData.teachers[t.n] = {
+                    guild: t.g, 
+                    avatar: humanAvatars[i % 12].url,
+                    mana: 0, level: 0, 
+                    stats: {'เข้าสอน':0, 'มาสาย':0, 'ลืมบันทึก':0, 'หายตัว':0, 'สอนแทน':0, 'ไปราชการ':0}
+                };
+            });
+            syncToCloud(); // เซฟก้อนแรกขึ้นไป
+        }
+
+        // 3. CLOUD SYNC FUNCTION
+        async function syncToCloud(newRecords = [], btnElement = null, originalHtml = "") {
+            // Backup locally just in case
+            localStorage.setItem('academyPastelDB', JSON.stringify(appData));
+            
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'save',
+                        appData: appData,
+                        newRecords: newRecords
+                    })
+                });
+                const result = await res.json();
+                
+                if(result.status === 'success' && btnElement) {
+                    btnElement.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> บันทึกสำเร็จค่า!`;
+                    btnElement.classList.replace('from-pink-300', 'from-green-400');
+                    setTimeout(() => { 
+                        btnElement.innerHTML = originalHtml; 
+                        btnElement.classList.replace('from-green-400', 'from-pink-300'); 
+                        btnElement.disabled = false;
+                        if(newRecords.length > 0) generateDailyRecord(); // Refresh table
+                    }, 3000);
+                }
+            } catch (e) {
+                console.error("Cloud Sync Error", e);
+                if(btnElement) {
+                    alert("ส่งข้อมูลไป Google Sheets ไม่สำเร็จค่ะ แต่ข้อมูลบันทึกในเครื่องแล้วน้า");
+                    btnElement.innerHTML = originalHtml;
+                    btnElement.disabled = false;
+                }
+            }
+        }
+
+        // Tabs
+        function switchTab(tabId) {
+            ['record','dashboard','setup','history'].forEach(id => {
+                document.getElementById(`panel-${id}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${id}`);
+                if(id === tabId) {
+                    btn.classList.add('active'); btn.classList.replace('text-slate-500', 'text-pink-500');
+                } else {
+                    btn.classList.remove('active'); btn.classList.replace('text-pink-500', 'text-slate-500');
+                }
+            });
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+            
+            if(tabId === 'dashboard') selectGuild(guilds[0]);
+            if(tabId === 'setup') renderSetupTable();
+            if(tabId === 'history') {
+                document.getElementById('historyDate').value = document.getElementById('recordDate').value;
+                renderHistory();
+            }
+        }
+
+        // 4. MASTER SETUP MODULE (Auto-Sync)
+        function renderSetupTable() {
+            const grade = document.getElementById('setupGrade').value;
+            const day = document.getElementById('setupDay').value;
+            const container = document.getElementById('setup-table-container');
+
+            if(!grade) {
+                container.innerHTML = `<div class="text-center py-8 text-pink-400 font-medium"><i class="fa-solid fa-wand-magic-sparkles text-4xl mb-3 text-pink-300"></i><br>เลือกระดับชั้นและวัน เพื่อเริ่มจัดตารางสอนเลยค่ะ!</div>`;
+                return;
+            }
+
+            if(!appData.masterSchedule[grade]) appData.masterSchedule[grade] = {};
+            if(!appData.masterSchedule[grade][day]) appData.masterSchedule[grade][day] = Array(7).fill({subj:"", tc:""});
+
+            const schedule = appData.masterSchedule[grade][day];
+            let teacherOptions = `<option value="">-- ว่าง/ระบุชื่อครู --</option>`;
+            teacherList.forEach(t => teacherOptions += `<option value="${t.n}">${t.n}</option>`);
+
+            let html = '';
+            for(let i=0; i<7; i++) {
+                let s = schedule[i];
+                html += `
+                <div class="flex flex-col md:flex-row items-center gap-3 bg-white p-4 rounded-2xl border-2 border-pink-50 hover:border-pink-200 transition-colors shadow-sm">
+                    <div class="w-12 h-12 bg-pink-100 text-pink-600 font-bold text-xl rounded-xl flex items-center justify-center shrink-0">${i+1}</div>
+                    <input type="text" placeholder="ชื่อวิชา (เช่น ค31102 คณิตฯ)" class="flex-1 p-3 bg-slate-50 w-full text-sm font-medium" value="${s.subj}" onchange="triggerAutoSaveSetup(${day}, ${i}, 'subj', this.value)">
+                    <select class="flex-1 p-3 bg-slate-50 w-full font-bold text-purple-600 text-sm" onchange="triggerAutoSaveSetup(${day}, ${i}, 'tc', this.value)">
+                        ${teacherOptions.replace(`value="${s.tc}"`, `value="${s.tc}" selected`)}
+                    </select>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function triggerAutoSaveSetup(day, periodIdx, key, val) {
+            const grade = document.getElementById('setupGrade').value;
+            let current = appData.masterSchedule[grade][day][periodIdx];
+            appData.masterSchedule[grade][day][periodIdx] = { ...current, [key]: val };
+            
+            // UI Indicator
+            const ind = document.getElementById('setup-save-indicator');
+            ind.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> กำลังซิงก์...`;
+            ind.style.opacity = '1';
+
+            // Debounce to avoid spamming the server
+            clearTimeout(setupSaveTimeout);
+            setupSaveTimeout = setTimeout(() => {
+                syncToCloud().then(() => {
+                    ind.innerHTML = `<i class="fa-solid fa-check-circle"></i> ซิงก์ขึ้น Cloud เรียบร้อย!`;
+                    setTimeout(() => { ind.style.opacity = '0'; }, 2000);
+                });
+            }, 1500);
+        }
+
+        // 5. DAILY RECORD MODULE
+        function generateDailyRecord() {
+            const dateStr = document.getElementById('recordDate').value;
+            const grade = document.getElementById('recordGrade').value;
+            const container = document.getElementById('record-table-container');
+            const header = document.getElementById('record-header');
+            const btn = document.getElementById('submit-record-btn');
+
+            if(!dateStr || !grade) return;
+
+            const dateObj = new Date(dateStr);
+            const dayOfWeek = dateObj.getDay(); 
+            document.getElementById('record-subtitle').innerText = `วัน${["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"][dayOfWeek]}ที่ ${dateObj.toLocaleDateString('th-TH')}`;
+            header.classList.remove('hidden');
+
+            if(dayOfWeek === 0 || dayOfWeek === 6) {
+                container.innerHTML = `<div class="bg-blue-50 text-blue-500 p-8 rounded-3xl text-center border-2 border-blue-100 font-bold shadow-sm"><i class="fa-solid fa-mug-hot text-5xl mb-4 text-blue-300"></i><br><span class="text-2xl font-cute">วันหยุดเสาร์-อาทิตย์</span><br><span class="text-gray-500 font-normal">จอมเวทย์พักผ่อนจ้า ☕</span></div>`;
+                btn.classList.add('hidden');
+                return;
+            }
+
+            // Check if already checked today
+            const existingRecord = appData.history.find(h => h.Date === dateStr && h.Class === grade);
+            if(existingRecord) {
+                container.innerHTML = `<div class="bg-green-50 text-green-600 p-8 rounded-3xl text-center border-2 border-green-100 font-bold shadow-sm"><i class="fa-solid fa-check-circle text-5xl mb-4 text-green-400"></i><br><span class="text-2xl font-cute">บันทึกเรียบร้อยแล้ว ✅</span><br><span class="text-gray-500 font-normal">ห้อง ${grade} เช็คชื่อวันนี้ไปแล้ว ไปดูได้ที่แท็บ "ประวัติ" เลยค่า</span></div>`;
+                btn.classList.add('hidden');
+                return;
+            }
+
+            const daySchedule = (appData.masterSchedule[grade] && appData.masterSchedule[grade][dayOfWeek]) 
+                                ? appData.masterSchedule[grade][dayOfWeek] 
+                                : Array(7).fill({subj:"", tc:""});
+
+            let teacherOptions = `<option value="">-- เลือกจอมเวทย์ --</option>`;
+            teacherList.forEach(t => teacherOptions += `<option value="${t.n}">${t.n}</option>`);
+
+            let html = '';
+            for(let i=0; i<7; i++) {
+                const isFree = !daySchedule[i].subj && !daySchedule[i].tc;
+                const rowClass = isFree ? "bg-slate-50 border-dashed border-slate-200" : "bg-white shadow-sm border-solid border-pink-100";
+                const uniqueId = `rec-${i}`;
+                
+                html += `
+                <div class="schedule-row ${rowClass} p-5 rounded-2xl border-2 flex flex-col md:flex-row gap-4 items-center transition hover:border-pink-300" data-period="${i+1}" data-empty="${isFree}">
+                    <div class="w-12 h-12 ${isFree ? 'bg-slate-200 text-slate-500' : 'bg-pink-100 text-pink-500'} font-bold text-xl rounded-xl flex items-center justify-center shrink-0">${i+1}</div>
+                    
+                    <div class="flex-1 w-full flex flex-col gap-2">
+                        ${isFree 
+                            ? `<input type="text" placeholder="📝 พิมพ์ชื่อวิชา (ถ้ามีการสอนแทรก)" class="w-full p-2 text-sm bg-white border-slate-200 focus:border-blue-300 manual-subject">
+                               <select class="w-full p-2 text-sm text-slate-600 bg-white border-slate-200 focus:border-blue-300 manual-teacher">${teacherOptions}</select>`
+                            : `<div class="font-bold text-lg text-slate-700 subject-name">${daySchedule[i].subj}</div>
+                               <div class="text-xs text-pink-500 font-bold bg-pink-50 px-3 py-1 rounded-full inline-block border border-pink-100 teacher-label" data-teacher="${daySchedule[i].tc}"><i class="fa-solid fa-chalkboard-user mr-1"></i> ${daySchedule[i].tc}</div>`
+                        }
+                    </div>
+
+                    <div class="w-full md:w-48">
+                        <select class="w-full p-3 font-bold bg-white ${isFree ? 'text-slate-400' : 'text-slate-600'} border-slate-200 status-dropdown" onchange="toggleSubInput(this, '${uniqueId}'); this.classList.replace('text-slate-400', 'text-slate-700');">
+                            ${isFree ? `<option value="ว่าง/ไม่มีสอน">-- คาบว่าง --</option>` : `<option value="ลืมบันทึก">⚪ ลืมบันทึก (0)</option>`}
+                            <option value="เข้าสอน" class="text-green-500">🟢 เข้าสอน (+50)</option>
+                            <option value="มาสาย" class="text-yellow-500">🟡 มาสาย (0)</option>
+                            <option value="สอนแทน" class="text-purple-500">🟣 สอนแทน (+50)</option>
+                            <option value="ไปราชการ" class="text-blue-500">🔵 ไปราชการ (0)</option>
+                            <option value="หายตัว" class="text-red-400">🔴 หายตัว (0)</option>
+                        </select>
+                    </div>
+
+                    <div class="w-full md:w-48 hidden sub-input-wrapper" id="sub-wrap-${uniqueId}">
+                        <input type="text" placeholder="ครูที่สอนแทน..." class="w-full p-3 bg-purple-50 border-purple-200 text-purple-700 sub-input text-sm rounded-xl focus:border-purple-400">
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+        }
+
+        function toggleSubInput(sel, id) {
+            const wrap = document.getElementById(`sub-wrap-${id}`);
+            if(sel.value === 'สอนแทน' || sel.value === 'ไปราชการ') wrap.classList.remove('hidden');
+            else wrap.classList.add('hidden');
+        }
+
+        function submitDailyRecord() {
+            const dateStr = document.getElementById('recordDate').value;
+            const grade = document.getElementById('recordGrade').value;
+            const container = document.getElementById('record-table-container');
+            const btn = document.getElementById('submitBtn');
+
+            if (!dateStr || !grade) { alert("⚠️ เลือกวันที่และระดับชั้นก่อนนะคะ!"); return; }
+
+            const rows = container.querySelectorAll('.schedule-row');
+            let records = [];
+            let hasError = false;
+
+            // Validation
+            rows.forEach(row => {
+                const status = row.querySelector('.status-dropdown').value;
+                if (status === 'ว่าง/ไม่มีสอน' || status === 'ลืมบันทึก') return;
+
+                const period = row.getAttribute('data-period');
+                const isEmpty = row.getAttribute('data-empty') === 'true';
+                
+                const tcName = isEmpty ? row.querySelector('.manual-teacher').value : row.querySelector('.teacher-label').getAttribute('data-teacher');
+                const subName = row.querySelector('.sub-input') ? row.querySelector('.sub-input').value.trim() : "";
+
+                if ((status === 'สอนแทน' || status === 'ไปราชการ') && subName === "") {
+                    alert(`คาบ ${period} ขาดชื่อคนสอนแทนค่ะ`); hasError = true; return;
+                }
+                if (!tcName) {
+                    alert(`คาบว่างที่ ${period} เลือกว่ามีการสอน ต้องระบุชื่อครูด้วยน้า`); hasError = true; return;
+                }
+            });
+
+            if (hasError) return;
+
+            // Processing Data
+            rows.forEach(row => {
+                const status = row.querySelector('.status-dropdown').value;
+                if (status === 'ว่าง/ไม่มีสอน' || status === 'ลืมบันทึก') return;
+
+                const period = row.getAttribute('data-period');
+                const isEmpty = row.getAttribute('data-empty') === 'true';
+                
+                const subj = isEmpty ? row.querySelector('.manual-subject').value.trim() : row.querySelector('.subject-name').innerText;
+                const tcName = isEmpty ? row.querySelector('.manual-teacher').value : row.querySelector('.teacher-label').getAttribute('data-teacher');
+                const subName = row.querySelector('.sub-input') ? row.querySelector('.sub-input').value.trim() : "";
+                
+                let mana = (status === 'เข้าสอน' || status === 'สอนแทน') ? 50 : 0;
+
+                // Update Stats
+                if(appData.teachers[tcName]) {
+                    appData.teachers[tcName].stats[status] = (appData.teachers[tcName].stats[status] || 0) + 1;
+                    appData.teachers[tcName].mana += mana;
+                    appData.teachers[tcName].level = Math.floor(appData.teachers[tcName].mana / 100);
+                }
+
+                const rec = { Date: dateStr, Class: grade, Period: period, Subject: subj, TeacherName: tcName, Status: status, SubstituteName: subName, ManaEarned: mana };
+                records.push(rec);
+                appData.history.push(rec); 
+            });
+
+            if (records.length === 0) { alert("ไม่มีข้อมูลสถานะให้บันทึกค่ะ"); return; }
+
+            const ogHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังส่งไปที่คลาวด์...`;
+            btn.disabled = true;
+
+            // Sync all to Cloud
+            syncToCloud(records, btn, ogHtml);
+        }
+
+        // 6. DASHBOARD MODULE
+        function renderGuilds() {
+            const container = document.getElementById('guild-selector');
+            container.innerHTML = guilds.map(g => 
+                `<button onclick="selectGuild('${g}')" class="w-full text-left px-4 py-3 rounded-xl bg-white border-2 border-pink-50 hover:bg-pink-50 hover:border-pink-300 transition shadow-sm text-slate-600 font-bold font-cute text-lg" id="btn-guild-${g}">${g}</button>`
+            ).join('');
+        }
+
+        function selectGuild(guild) {
+            guilds.forEach(g => {
+                const b = document.getElementById(`btn-guild-${g}`);
+                if(b) b.classList.remove('bg-pink-100', 'border-pink-400', 'text-pink-600');
+                if(g === guild && b) b.classList.add('bg-pink-100', 'border-pink-400', 'text-pink-600');
+            });
+            document.getElementById('current-guild-name').innerText = guild;
+
+            const members = Object.keys(appData.teachers).filter(n => appData.teachers[n].guild === guild);
+            const container = document.getElementById('guild-members-container');
+            
+            let totalMana = 0; let html = '';
+            members.forEach(name => {
+                const t = appData.teachers[name]; totalMana += t.mana; let prog = t.mana % 100;
+                html += `
+                <div class="bg-white rounded-3xl p-6 border-2 border-pink-50 shadow-sm hover:shadow-md transition">
+                    <div class="flex gap-4 items-center mb-4">
+                        <div class="relative cursor-pointer group w-20 h-20 rounded-full border-4 border-pink-100 bg-slate-50 flex-shrink-0 flex items-center justify-center overflow-hidden" onclick="openAvatarModal('${name}')">
+                            <img src="${t.avatar}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform">
+                            <div class="absolute inset-0 bg-white/70 flex justify-center items-center opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-pen text-pink-500"></i></div>
+                        </div>
+                        <div class="flex-1 cursor-pointer" onclick="openChartModal('${name}')">
+                            <h4 class="font-bold text-slate-700 text-lg hover:text-pink-500 transition">${name}</h4>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="text-xs font-bold bg-blue-50 text-blue-500 px-3 py-1 rounded-full border border-blue-100">Lv.${t.level}</span>
+                                <span class="text-xs font-bold bg-purple-50 text-purple-500 px-3 py-1 rounded-full border border-purple-100"><i class="fa-solid fa-star"></i> Mana: ${t.mana}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 mb-4"><div class="bg-gradient-to-r from-pink-400 to-purple-400 h-2 rounded-full" style="width:${prog}%"></div></div>
+                    <div class="grid grid-cols-6 gap-1 text-center text-[10px] font-bold bg-slate-50 rounded-xl p-2 border border-slate-100">
+                        <div><span class="text-slate-400 block">ปกติ</span><span class="text-green-500 text-xs">${t.stats['เข้าสอน']||0}</span></div>
+                        <div><span class="text-slate-400 block">สาย</span><span class="text-yellow-500 text-xs">${t.stats['มาสาย']||0}</span></div>
+                        <div><span class="text-slate-400 block">ลืม</span><span class="text-slate-400 text-xs">${t.stats['ลืมบันทึก']||0}</span></div>
+                        <div><span class="text-slate-400 block">หาย</span><span class="text-red-400 text-xs">${t.stats['หายตัว']||0}</span></div>
+                        <div><span class="text-slate-400 block">แทน</span><span class="text-purple-500 text-xs">${t.stats['สอนแทน']||0}</span></div>
+                        <div><span class="text-slate-400 block">ราช.</span><span class="text-blue-500 text-xs">${t.stats['ไปราชการ']||0}</span></div>
+                    </div>
+                    <button onclick="openChartModal('${name}')" class="mt-4 w-full py-2 bg-white border-2 border-pink-100 hover:bg-pink-50 text-pink-500 rounded-xl font-bold transition text-xs shadow-sm"><i class="fa-solid fa-chart-pie"></i> ดูสถิติ</button>
+                </div>`;
+            });
+            document.getElementById('guild-total-mana').innerText = `รวม: ${totalMana} Mana`;
+            container.innerHTML = html || `<div class="col-span-full text-center py-8 text-slate-400">ยังไม่มีนักเวทย์ในกิลด์นี้</div>`;
+        }
+
+        // 7. HISTORY MODULE
+        function renderHistory() {
+            const dateStr = document.getElementById('historyDate').value;
+            const tbody = document.getElementById('history-tbody');
+            
+            const recs = appData.history.filter(h => h.Date === dateStr).reverse();
+            if(recs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 font-medium bg-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-pink-200"></i><br>ยังไม่มีประวัติการบันทึกเวทมนตร์ในวันนี้ค่ะ</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = recs.map(r => {
+                let statusColor = r.Status==='เข้าสอน'?'text-green-500 bg-green-50': r.Status==='มาสาย'?'text-yellow-600 bg-yellow-50': r.Status==='หายตัว'?'text-red-500 bg-red-50': r.Status==='สอนแทน'?'text-purple-500 bg-purple-50': 'text-gray-500 bg-gray-100';
+                return `
+                <tr class="hover:bg-blue-50/50 transition border-b border-blue-50 bg-white">
+                    <td class="p-4">${r.Date}</td>
+                    <td class="p-4 font-bold text-slate-700">${r.Class}</td>
+                    <td class="p-4 text-center font-bold text-slate-500">${r.Period}</td>
+                    <td class="p-4 font-medium">${r.Subject || '-'}</td>
+                    <td class="p-4 text-pink-500 font-bold">${r.TeacherName}</td>
+                    <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor}">${r.Status} ${r.SubstituteName ? `(${r.SubstituteName})`:''}</span></td>
+                    <td class="p-4 text-center text-blue-500 font-bold text-lg">+${r.ManaEarned}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 8. MODALS & CHARTS
+        function renderAvatarOptions() {
+            document.getElementById('avatar-grid').innerHTML = humanAvatars.map(av => `
+                <div class="cursor-pointer group flex flex-col items-center bg-white p-3 rounded-2xl border-2 border-pink-50 hover:border-pink-300 hover:shadow-sm transition-all" onclick="saveAvatar('${av.url}')">
+                    <img src="${av.url}" class="w-16 h-16 rounded-full mb-2 bg-slate-50 group-hover:scale-110 transition-transform shadow-sm">
+                    <span class="text-xs font-bold text-slate-500 group-hover:text-pink-500">${av.name}</span>
+                </div>
+            `).join('');
+        }
+        function openAvatarModal(name) { document.getElementById('editing-teacher').value = name; document.getElementById('modal-avatar').classList.remove('hidden'); }
+        function saveAvatar(url) {
+            const tName = document.getElementById('editing-teacher').value;
+            appData.teachers[tName].avatar = url; syncToCloud(); selectGuild(appData.teachers[tName].guild);
+            closeModal('modal-avatar');
+        }
+        
+        function openChartModal(name) {
+            const t = appData.teachers[name];
+            document.getElementById('chart-name').innerText = name;
+            document.getElementById('chart-avatar').src = t.avatar;
+            document.getElementById('chart-level').innerText = `Level ${t.level} | ${t.mana} Mana`;
+            document.getElementById('modal-chart').classList.remove('hidden');
+
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            if(currentChart) currentChart.destroy();
+            const vals = [t.stats['เข้าสอน']||0, t.stats['มาสาย']||0, t.stats['หายตัว']||0, t.stats['สอนแทน']||0, t.stats['ไปราชการ']||0];
+            const hasData = vals.some(v=>v>0);
+
+            currentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['เข้าสอน', 'มาสาย', 'หายตัว', 'สอนแทน', 'ไปราชการ'],
+                    datasets: [{
+                        data: hasData ? vals : [1],
+                        backgroundColor: hasData ? ['#34d399','#facc15','#f87171','#c084fc','#60a5fa'] : ['#f1f5f9'],
+                        borderWidth: 3, borderColor: '#ffffff'
+                    }]
+                },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom', labels: {font: {family:'Prompt'}} } } }
+            });
+        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // 9. CHATBOT
+        function toggleChat() { document.getElementById('chat-window').classList.toggle('active'); }
+        function sendMsg() {
+            const i = document.getElementById('chat-input');
+            const txt = i.value.trim(); if(!txt) return;
+            addChat('user', txt); i.value = '';
+            
+            setTimeout(() => {
+                addChat('ai', "หนูซิงก์ข้อมูลทั้งหมดไปเก็บบน Google Sheets ของอาจารย์แล้วนะคะ เปิดกี่เครื่องก็เห็นตรงกัน 100% เลยค่า! ☁️✨");
+            }, 800);
+        }
+        function addChat(sender, txt) {
+            const c = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = sender==='ai' ? 'msg-ai p-4 shadow-sm self-start max-w-[85%] font-medium' : 'msg-user p-4 shadow-sm self-end max-w-[85%] font-medium';
+            div.innerText = txt;
+            c.appendChild(div); c.scrollTop = c.scrollHeight;
+        }
+    </script>
+</body>
+</html>
